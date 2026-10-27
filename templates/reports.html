@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Community Safety Reports – SafeSpot{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  
+  <div class="page-header">
+    <div>
+      <h1 class="page-header-title">Community Hazard Tracker</h1>
+      <p class="page-header-subtitle">
+        Explore, verify, and monitor the resolution status of reported safety hazards in your neighborhood.
+      </p>
+    </div>
+    <div>
+      <a href="{{ url_for('report_hazard') }}" class="btn btn-primary">
+        <span>➕</span> Report a New Hazard
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Statistics Grid -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon primary">📊</div>
+      <div>
+        <div class="stat-val">{{ stats.total }}</div>
+        <div class="stat-lbl">Total Reports</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon warning">⏳</div>
+      <div>
+        <div class="stat-val">{{ stats.pending }}</div>
+        <div class="stat-lbl">Pending Review</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon danger">🚨</div>
+      <div>
+        <div class="stat-val">{{ stats.critical }}</div>
+        <div class="stat-lbl">Critical Issues</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon success">✅</div>
+      <div>
+        <div class="stat-val">{{ stats.resolved }}</div>
+        <div class="stat-lbl">Resolved Cases</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls Bar -->
+  <div class="controls-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchQuery" class="form-control" placeholder="Search by hazard, street name, or keyword...">
+    </div>
+
+    <div class="filters-group">
+      <select id="filterCategory" class="form-control" style="width: auto;">
+        <option value="all">All Categories</option>
+        <option value="lighting">💡 Poor Lighting</option>
+        <option value="pothole">🚧 Road / Pothole</option>
+        <option value="harassment">⚠️ Unsafe / Harassment</option>
+        <option value="obstruction">🛑 Obstruction</option>
+        <option value="flood">💧 Waterlogging</option>
+        <option value="electrical">⚡ Electrical</option>
+        <option value="traffic">🚸 Traffic / Signal</option>
+        <option value="animal">🐕 Animals</option>
+        <option value="other">📍 Other</option>
+      </select>
+
+      <select id="filterStatus" class="form-control" style="width: auto;">
+        <option value="all">All Statuses</option>
+        <option value="Pending">⏳ Pending</option>
+        <option value="Investigating">🔍 Investigating</option>
+        <option value="Resolved">✅ Resolved</option>
+      </select>
+
+      <select id="filterSeverity" class="form-control" style="width: auto;">
+        <option value="all">All Severities</option>
+        <option value="critical">Critical</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+
+      <select id="sortBy" class="form-control" style="width: auto;">
+        <option value="newest">Sort: Newest First</option>
+        <option value="upvotes">Sort: Most Upvoted</option>
+        <option value="severity">Sort: Highest Severity</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <span id="visibleReportsCount" style="font-size: 0.88rem; font-weight: 700; color: #64748b;">
+      Loading reports...
+    </span>
+  </div>
+
+  <!-- Reports Grid (Rendered by reports.js) -->
+  <div id="reportsGrid" class="reports-grid"></div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}

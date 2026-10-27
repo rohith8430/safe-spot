@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Sign In – SafeSpot{% endblock %}
+
+{% block content %}
+<div style="min-height: calc(100vh - 180px); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
+  
+  <div style="background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08); width: 100%; max-width: 440px; padding: 2.5rem; text-align: center;">
+    
+    <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #4f46e5, #8b5cf6); border-radius: 14px; margin: 0 auto 1.25rem; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);">
+      🔐
+    </div>
+
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Admin Portal</h1>
+    <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1.75rem;">
+      Authorized access for city ward officers, community moderators, and safety personnel.
+    </p>
+
+    <form action="{{ url_for('admin_login') }}" method="POST" style="text-align: left;">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" placeholder="Enter admin username" autocomplete="username" required>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.75rem;">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" placeholder="Enter admin password" autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 0.95rem;">
+        Sign In to Dashboard
+      </button>
+    </form>
+
+    <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #f1f5f9; font-size: 0.85rem;">
+      <a href="{{ url_for('index') }}" style="color: #64748b; text-decoration: none; font-weight: 600;">
+        ← Back to Community Map
+      </a>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

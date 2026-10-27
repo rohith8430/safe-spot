@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SafeSpot – Community Safety Mapping{% endblock %}</title>
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- SafeSpot Custom Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('safespot_theme');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+    })();
+  </script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <a href="{{ url_for('index') }}" class="nav-brand">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        SafeSpot<span class="brand-text"></span>
+        <span class="brand-badge">Live Map</span>
+      </div>
+    </a>
+
+    <ul class="nav-links">
+      <li>
+        <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+          <span>🗺️</span> <span>Map</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('reports_list') }}" class="nav-link {% if request.endpoint == 'reports_list' %}active{% endif %}">
+          <span>📋</span> <span>Reports Feed</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('report_hazard') }}" class="nav-link {% if request.endpoint == 'report_hazard' %}active{% endif %}">
+          <span>⚠️</span> <span>Report Hazard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if 'admin' in request.endpoint %}active{% endif %}">
+          <span>🔐</span> <span>Admin</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-cta" style="display: flex; align-items: center; gap: 0.65rem;">
+      <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light / Dark Mode" aria-label="Toggle Theme">
+        <span>🌙</span>
+      </button>
+      {% if session.get('is_admin') %}
+        <span style="font-size: 0.85rem; font-weight: 700; color: #4f46e5; background: #eef2ff; padding: 0.35rem 0.75rem; border-radius: 999px;">
+          👤 Admin
+        </span>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-outline btn-sm">Logout</a>
+      {% else %}
+        <a href="{{ url_for('report_hazard') }}" class="btn btn-primary btn-sm">
+          <span>+</span> Report Hazard
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Server Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div style="max-width: 1200px; margin: 1rem auto; padding: 0 1.5rem;">
+        {% for category, message in messages %}
+          <div style="padding: 0.85rem 1.25rem; border-radius: 10px; margin-bottom: 0.75rem; font-weight: 600; font-size: 0.9rem;
+            {% if category == 'success' %} background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;
+            {% elif category == 'danger' %} background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;
+            {% elif category == 'warning' %} background: #fef3c7; color: #92400e; border: 1px solid #fde68a;
+            {% else %} background: #e0f2fe; color: #075985; border: 1px solid #bae6fd;
+            {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Content Block -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Common Utilities -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

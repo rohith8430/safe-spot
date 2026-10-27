@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}SafeSpot – Interactive Community Safety Map{% endblock %}
+
+{% block content %}
+<div class="map-layout">
+  
+  <!-- Floating Top Controls Bar (Metrics, Live Search, Basemap Switcher & Quick Tools) -->
+  <div class="floating-top-controls">
+    <div class="floating-top-left">
+      <!-- Live Safety Counters -->
+      <div class="floating-metrics-bar">
+        <div class="metric-pill">
+          <span>🛡️ Total Reports:</span>
+          <span class="metric-pill-val" id="totalReportsMetric">{{ stats.total }}</span>
+        </div>
+        <div class="metric-pill pill-critical">
+          <span>🚨 Critical Alerts:</span>
+          <span class="metric-pill-val" id="criticalMetric">{{ stats.critical }}</span>
+        </div>
+        <div class="metric-pill pill-resolved">
+          <span>✅ Resolved:</span>
+          <span class="metric-pill-val" id="resolvedMetric">{{ stats.resolved }}</span>
+        </div>
+      </div>
+
+      <!-- Quick Map Search Bar -->
+      <div class="map-search-bar">
+        <span style="font-size: 0.95rem; color: #64748b; margin-right: 2px;">🔍</span>
+        <input type="text" id="mapSearchInput" class="map-search-input" placeholder="Search hazards, streets, or keywords..." autocomplete="off">
+        <button type="button" id="mapSearchClear" class="map-search-clear" title="Clear search" style="display: none;">&times;</button>
+      </div>
+    </div>
+
+    <div class="floating-top-right">
+      <!-- Basemap Layer Switcher (Streets, Satellite, Dark, Topo) -->
+      <div class="basemap-switcher" id="basemapSwitcher">
+        <button type="button" class="basemap-btn active" data-layer="streets" title="Standard OpenStreetMap">
+          <span>🗺️</span> <span>Streets</span>
+        </button>
+        <button type="button" class="basemap-btn" data-layer="satellite" title="Satellite Imagery">
+          <span>🛰️</span> <span>Satellite</span>
+        </button>
+        <button type="button" class="basemap-btn" data-layer="dark" title="Dark / Night Navigation Mode">
+          <span>🌙</span> <span>Dark</span>
+        </button>
+        <button type="button" class="basemap-btn" data-layer="topo" title="Topographic / Terrain View">
+          <span>⛰️</span> <span>Topo</span>
+        </button>
+      </div>
+
+      <!-- Quick Map Action Tools -->
+      <button type="button" class="map-tool-btn" id="fitAllBtn" title="Fit all hazards in view">
+        <span>🎯</span> <span>Fit All</span>
+      </button>
+      <button type="button" class="map-tool-btn" id="toggleRiskRingsBtn" title="Toggle Danger Hotspot Warning Rings">
+        <span>⭕</span> <span>Hotspots</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Leaflet Map Canvas -->
+  <div id="map"></div>
+
+  <!-- Floating Bottom Multi-Filter Container -->
+  <div class="floating-bottom-container">
+    
+    <!-- Secondary Filter Bar: Severity, Status, Nearby Distance Radius & Reset -->
+    <div class="floating-subfilter-panel">
+      <div class="subfilter-label">
+        <span>⚙️ Options:</span>
+      </div>
+
+      <select id="subfilterSeverity" class="subfilter-select" title="Filter by severity level">
+        <option value="all">All Severities</option>
+        <option value="critical">🚨 Critical Danger</option>
+        <option value="high">⚠️ High Hazard</option>
+        <option value="medium">🟡 Medium Caution</option>
+        <option value="low">🟢 Low / Minor</option>
+      </select>
+
+      <select id="subfilterStatus" class="subfilter-select" title="Filter by status">
+        <option value="all">All Statuses</option>
+        <option value="Pending">⏳ Pending</option>
+        <option value="Investigating">🔍 Investigating</option>
+        <option value="Resolved">✅ Resolved</option>
+      </select>
+
+      <select id="subfilterRadius" class="subfilter-select" title="Filter hazards near your GPS position">
+        <option value="all">📍 Any Distance</option>
+        <option value="0.5">📍 Within 500m</option>
+        <option value="1">📍 Within 1 km</option>
+        <option value="3">📍 Within 3 km</option>
+        <option value="5">📍 Within 5 km</option>
+      </select>
+
+      <span class="subfilter-counter" id="mapVisibleCount">{{ stats.total }} visible</span>
+
+      <button type="button" class="subfilter-reset-btn" id="mapResetFiltersBtn" title="Reset all search & filter options">
+        <span>↺ Clear</span>
+      </button>
+    </div>
+
+    <!-- Primary Category Filter Pills -->
+    <div class="floating-filter-panel" id="categoryFilterPanel">
+      <button type="button" class="filter-btn active" data-filter="all">
+        <span>🌐</span> All Hazards
+      </button>
+      <button type="button" class="filter-btn" data-filter="lighting">
+        <span>💡</span> Lighting
+      </button>
+      <button type="button" class="filter-btn" data-filter="pothole">
+        <span>🚧</span> Potholes & Road
+      </button>
+      <button type="button" class="filter-btn" data-filter="harassment">
+        <span>⚠️</span> Unsafe / Harassment
+      </button>
+      <button type="button" class="filter-btn" data-filter="flood">
+        <span>💧</span> Waterlogging
+      </button>
+      <button type="button" class="filter-btn" data-filter="electrical">
+        <span>⚡</span> Electrical
+      </button>
+      <button type="button" class="filter-btn" data-filter="traffic">
+        <span>🚸</span> Traffic & Signal
+      </button>
+      <button type="button" class="filter-btn" data-filter="animal">
+        <span>🐕</span> Animals
+      </button>
+      <button type="button" class="filter-btn" data-filter="obstruction">
+        <span>🛑</span> Obstructions
+      </button>
+      <button type="button" class="filter-btn" data-filter="resolved">
+        <span>🟢</span> Resolved
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Floating Action Buttons (Locate Me & Quick Report) -->
+  <div class="floating-fab">
+    <button class="locate-btn" id="locateMeBtn" title="My Location" aria-label="My Location">
+      <svg class="gps-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="8"></circle>
+        <line x1="12" y1="2" x2="12" y2="6"></line>
+        <line x1="12" y1="18" x2="12" y2="22"></line>
+        <line x1="2" y1="12" x2="6" y2="12"></line>
+        <line x1="18" y1="12" x2="22" y2="12"></line>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor"></circle>
+      </svg>
+      <span>My Location</span>
+    </button>
+    
+    <button class="fab-btn" onclick="openModal('quickReportModal')">
+      <span>➕</span> Report Hazard
+    </button>
+  </div>
+
+</div>
+
+<!-- Quick Hazard Report Modal -->
+<div id="quickReportModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <span>🚨</span> Report a Safety Hazard
+      </h3>
+      <button class="modal-close" onclick="closeModal('quickReportModal')">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.25rem;">
+        Click anywhere on the map behind to drop a pin, or enter the coordinates below to alert your neighbors and local authorities.
+      </p>
+
+      <form id="quickReportForm" enctype="multipart/form-data">
+        <div class="form-group">
+          <label class="form-label">Hazard Title <span class="req">*</span></label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Broken streetlight on corner of 4th Ave" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category <span class="req">*</span></label>
+            <select name="category" class="form-control" required>
+              <option value="lighting">💡 Poor Lighting / Dark Stretch</option>
+              <option value="pothole">🚧 Deep Pothole / Road Damage</option>
+              <option value="harassment">⚠️ Harassment / Unsafe Area</option>
+              <option value="obstruction">🛑 Sidewalk Obstruction</option>
+              <option value="flood">💧 Waterlogging / Open Drain</option>
+              <option value="electrical">⚡ Electrical / Exposed Wires</option>
+              <option value="traffic">🚸 Traffic / Missing Signal</option>
+              <option value="animal">🐕 Stray Animal Hazard</option>
+              <option value="other">📍 Other Safety Concern</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Severity Level <span class="req">*</span></label>
+            <select name="severity" class="form-control" required>
+              <option value="low">Low (Minor inconvenience)</option>
+              <option value="medium" selected>Medium (Caution advised)</option>
+              <option value="high">High (Immediate hazard)</option>
+              <option value="critical">Critical (Severe risk / dangerous)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Location / Landmark Description <span class="req">*</span></label>
+          <input type="text" name="location_name" class="form-control" placeholder="e.g. Near City Central Metro Exit 2" required>
+        </div>
+
+        <!-- Coordinates Box -->
+        <div id="coordPickerBox" class="coord-picker-box">
+          <div id="coordPickedText" style="font-size: 0.88rem; color: #475569;">
+            💡 <em>Click anywhere on the map to automatically pin the exact latitude and longitude.</em>
+          </div>
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div>
+              <input type="text" id="reportLat" name="latitude" class="form-control" placeholder="Latitude (e.g. 12.9716)" required>
+            </div>
+            <div>
+              <input type="text" id="reportLng" name="longitude" class="form-control" placeholder="Longitude (e.g. 77.5946)" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Hazard Details & Description <span class="req">*</span></label>
+          <textarea name="description" class="form-control" rows="3" placeholder="Provide clear details to help community members and municipal crews..." required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Attach Photo (Optional)</label>
+            <input type="file" name="photo" class="form-control" accept="image/*">
+            <div class="form-help">Upload clear image showing the hazard (Max 8MB).</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Your Name / Identifier</label>
+            <input type="text" name="reporter_name" class="form-control" placeholder="Anonymous (or your name)">
+            <div class="form-help">Leave blank to report anonymously.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('quickReportModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <span>🚀</span> Submit Hazard Report
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

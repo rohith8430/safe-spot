@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard & Moderation – SafeSpot{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-header-title">Admin Moderation Center</h1>
+      <p class="page-header-subtitle">
+        Manage reports, update resolution stages, investigate community alerts, and monitor city safety.
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <button class="btn btn-outline" id="exportCsvBtn">
+        <span>📥</span> Export CSV
+      </button>
+      <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <span>🗺️</span> Open Live Map
+      </a>
+    </div>
+  </div>
+
+  <!-- Metric Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon primary">📊</div>
+      <div>
+        <div class="stat-val">{{ stats.total }}</div>
+        <div class="stat-lbl">Total Logged</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon warning">⏳</div>
+      <div>
+        <div class="stat-val">{{ stats.pending }}</div>
+        <div class="stat-lbl">Pending Review</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon primary" style="background: #e0f2fe; color: #0284c7;">🔍</div>
+      <div>
+        <div class="stat-val">{{ stats.investigating }}</div>
+        <div class="stat-lbl">Investigating</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon danger">🚨</div>
+      <div>
+        <div class="stat-val">{{ stats.critical }}</div>
+        <div class="stat-lbl">Critical Alerts</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon success">✅</div>
+      <div>
+        <div class="stat-val">{{ stats.resolved }}</div>
+        <div class="stat-lbl">Resolved Cases</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Filter Controls -->
+  <div class="controls-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="adminTableSearch" class="form-control" placeholder="Filter moderation table by title, reporter, or location...">
+    </div>
+
+    <div class="filters-group">
+      <select id="adminFilterStatus" class="form-control" style="width: auto;">
+        <option value="all">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Investigating">Investigating</option>
+        <option value="Resolved">Resolved</option>
+        <option value="Dismissed">Dismissed</option>
+      </select>
+
+      <select id="adminFilterSeverity" class="form-control" style="width: auto;">
+        <option value="all">All Severities</option>
+        <option value="critical">Critical</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Moderation Table Container -->
+  <div class="table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Hazard / Issue</th>
+          <th>Category</th>
+          <th>Severity</th>
+          <th>Location</th>
+          <th>Confirmations</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr id="admin-row-{{ report.id }}" data-status="{{ report.status }}" data-severity="{{ report.severity }}">
+          
+          <td>
+            <div style="font-weight: 700; color: #0f172a; margin-bottom: 0.2rem;">
+              #{{ report.id }} – {{ report.title }}
+            </div>
+            <div style="font-size: 0.8rem; color: #64748b; display: flex; gap: 0.75rem; align-items: center;">
+              <span>👤 {{ report.reporter_name }}</span>
+              <span>•</span>
+              <span>📅 {{ report.created_at[:10] }}</span>
+              {% if report.photo_url %}
+                <span>•</span>
+                <a href="{{ url_for('static', filename='uploads/' + report.photo_url) }}" target="_blank" style="color: #4f46e5; font-weight: 600;">
+                  📷 View Photo
+                </a>
+              {% endif %}
+            </div>
+          </td>
+
+          <td>
+            <span class="badge badge-cat">
+              {% if report.category == 'lighting' %}💡 Poor Lighting
+              {% elif report.category == 'pothole' %}🚧 Road / Pothole
+              {% elif report.category == 'harassment' %}⚠️ Unsafe Area
+              {% elif report.category == 'obstruction' %}🛑 Obstruction
+              {% elif report.category == 'flood' %}💧 Waterlogging
+              {% else %}📍 Other
+              {% endif %}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-sev-{{ report.severity }}">
+              <span class="badge-dot"></span>{{ report.severity }}
+            </span>
+          </td>
+
+          <td>
+            <div style="max-width: 200px; font-size: 0.85rem; color: #334155;">
+              📍 {{ report.location_name }}
+            </div>
+            <div style="font-size: 0.75rem; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">
+              {{ "%.4f"|format(report.latitude) }}, {{ "%.4f"|format(report.longitude) }}
+            </div>
+          </td>
+
+          <td>
+            <div style="font-weight: 700; color: #4f46e5; display: flex; align-items: center; gap: 0.35rem;">
+              <span>👍</span> {{ report.upvotes }}
+            </div>
+          </td>
+
+          <td>
+            <select class="status-select" data-id="{{ report.id }}" data-prev="{{ report.status }}">
+              <option value="Pending" {% if report.status == 'Pending' %}selected{% endif %}>⏳ Pending</option>
+              <option value="Investigating" {% if report.status == 'Investigating' %}selected{% endif %}>🔍 Investigating</option>
+              <option value="Resolved" {% if report.status == 'Resolved' %}selected{% endif %}>✅ Resolved</option>
+              <option value="Dismissed" {% if report.status == 'Dismissed' %}selected{% endif %}>❌ Dismissed</option>
+            </select>
+          </td>
+
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <a href="{{ url_for('index', focus=report.id) }}" class="btn btn-outline btn-sm" title="Pinpoint on Live Map">
+                <span>🗺️</span>
+              </a>
+              <button class="btn btn-outline btn-sm btn-delete-report" data-id="{{ report.id }}" data-title="{{ report.title }}" style="color: #ef4444; border-color: #fecaca;" title="Delete Report">
+                <span>🗑️</span>
+              </button>
+            </div>
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

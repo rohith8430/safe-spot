@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}Report a Safety Hazard – SafeSpot{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  
+  <div class="page-header">
+    <div>
+      <h1 class="page-header-title">Report a Safety Hazard</h1>
+      <p class="page-header-subtitle">
+        Help make your neighborhood safer by reporting broken lights, road damage, harassment hotspots, or physical obstructions.
+      </p>
+    </div>
+    <div>
+      <a href="{{ url_for('index') }}" class="btn btn-outline">
+        <span>🗺️</span> Return to Map
+      </a>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+    
+    <!-- Left Column: Form -->
+    <div style="background: #ffffff; padding: 2rem; border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+      <h2 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span>📝</span> Hazard Details
+      </h2>
+
+      <form action="{{ url_for('report_hazard') }}" method="POST" enctype="multipart/form-data">
+        
+        <div class="form-group">
+          <label class="form-label">Hazard Title <span class="req">*</span></label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Non-working streetlights on Elm Street" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category <span class="req">*</span></label>
+            <select name="category" class="form-control" required>
+              <option value="lighting">💡 Poor Lighting / Dark Stretch</option>
+              <option value="pothole">🚧 Deep Pothole / Road Damage</option>
+              <option value="harassment">⚠️ Harassment / Unsafe Area</option>
+              <option value="obstruction">🛑 Sidewalk Obstruction</option>
+              <option value="flood">💧 Waterlogging / Open Drain</option>
+              <option value="electrical">⚡ Electrical / Exposed Wires</option>
+              <option value="traffic">🚸 Traffic / Missing Signal</option>
+              <option value="animal">🐕 Stray Animal Hazard</option>
+              <option value="other">📍 Other Safety Concern</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Severity Level <span class="req">*</span></label>
+            <select name="severity" class="form-control" required>
+              <option value="low">Low (Minor inconvenience)</option>
+              <option value="medium" selected>Medium (Caution advised)</option>
+              <option value="high">High (Immediate hazard)</option>
+              <option value="critical">Critical (Severe danger)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Location Name or Nearest Landmark <span class="req">*</span></label>
+          <input type="text" name="location_name" id="locNameInput" class="form-control" placeholder="e.g. In front of Central Library entrance" required>
+        </div>
+
+        <div class="coord-picker-box picked" style="text-align: left;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label class="form-label" style="margin: 0;">Map Coordinates <span class="req">*</span></label>
+            <span style="font-size: 0.78rem; color: #4f46e5; font-weight: 700;">Click on the map right side 👉</span>
+          </div>
+          <div class="form-row">
+            <div>
+              <input type="text" id="reportLat" name="latitude" class="form-control" placeholder="Latitude" value="12.9716" required readonly>
+            </div>
+            <div>
+              <input type="text" id="reportLng" name="longitude" class="form-control" placeholder="Longitude" value="77.5946" required readonly>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description <span class="req">*</span></label>
+          <textarea name="description" class="form-control" rows="4" placeholder="Describe the safety issue, how long it has been present, and who is affected..." required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Attach Photo (Optional)</label>
+            <input type="file" name="photo" class="form-control" accept="image/*">
+            <div class="form-help">Max 8MB (.png, .jpg, .webp)</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input type="text" name="reporter_name" class="form-control" placeholder="Anonymous">
+            <div class="form-help">Visible in public reports feed</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">
+            <span>🚀</span> Publish Community Hazard Report
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right Column: Interactive Location Picker Map -->
+    <div>
+      <div style="background: #ffffff; padding: 1.25rem; border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Pick Location On Map</h3>
+            <p style="font-size: 0.82rem; color: #64748b;">Click or drag the marker to pinpoint the exact location.</p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnPageLocate" title="My Location">
+            <svg class="gps-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+              <circle cx="12" cy="12" r="8"></circle>
+              <line x1="12" y1="2" x2="12" y2="6"></line>
+              <line x1="12" y1="18" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="6" y2="12"></line>
+              <line x1="18" y1="12" x2="22" y2="12"></line>
+              <circle cx="12" cy="12" r="2.5" fill="currentColor"></circle>
+            </svg>
+            My Location
+          </button>
+        </div>
+
+        <!-- Mini map container -->
+        <div id="pickerMap" style="height: 480px; width: 100%; border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden;"></div>
+      </div>
+
+      <div style="background: #eef2ff; border-radius: 12px; padding: 1rem; border: 1px solid #c7d2fe; display: flex; gap: 0.75rem; align-items: center;">
+        <span style="font-size: 1.5rem;">💡</span>
+        <span style="font-size: 0.85rem; color: #3730a3;">
+          Accurate location mapping allows municipal authorities to respond rapidly and helps neighbors navigate around danger spots.
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const defaultLat = 12.9716;
+  const defaultLng = 77.5946;
+
+  const map = L.map('pickerMap').setView([defaultLat, defaultLng], 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  const marker = L.marker([defaultLat, defaultLng], {
+    draggable: true,
+    icon: L.divIcon({
+      className: 'picker-pin',
+      html: `<div style="background: #ef4444; color: #fff; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5); border: 3px solid #fff;">📍</div>`,
+      iconSize: [38, 38],
+      iconAnchor: [19, 38]
+    })
+  }).addTo(map);
+
+  function updateCoords(lat, lng) {
+    document.getElementById('reportLat').value = lat.toFixed(6);
+    document.getElementById('reportLng').value = lng.toFixed(6);
+  }
+
+  marker.on('dragend', (e) => {
+    const pos = e.target.getLatLng();
+    updateCoords(pos.lat, pos.lng);
+  });
+
+  map.on('click', (e) => {
+    marker.setLatLng(e.latlng);
+    updateCoords(e.latlng.lat, e.latlng.lng);
+  });
+
+  let pageAccuracyCircle = null;
+  const pageLocateBtn = document.getElementById('btnPageLocate');
+
+  if (pageLocateBtn) {
+    pageLocateBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by your browser.', 'warning');
+        return;
+      }
+      showToast('Requesting your current location...', 'info');
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const uLat = pos.coords.latitude;
+          const uLng = pos.coords.longitude;
+          const accuracy = pos.coords.accuracy || 0;
+
+          map.flyTo([uLat, uLng], 15);
+          marker.setLatLng([uLat, uLng]);
+          updateCoords(uLat, uLng);
+
+          if (pageAccuracyCircle) {
+            map.removeLayer(pageAccuracyCircle);
+            pageAccuracyCircle = null;
+          }
+
+          pageAccuracyCircle = L.circle([uLat, uLng], {
+            radius: accuracy,
+            color: '#2563eb',
+            weight: 1.5,
+            opacity: 0.65,
+            fillColor: '#3b82f6',
+            fillOpacity: 0.15
+          }).addTo(map);
+
+          const roundedAccuracy = Math.round(accuracy);
+          const accuracyText = roundedAccuracy > 0 ? ` (Accuracy: ±${roundedAccuracy}m)` : '';
+          showToast(`Map centered on your current location${accuracyText}`, 'success');
+        },
+        (err) => {
+          let friendlyMessage = 'Unable to access your location.';
+          switch (err.code) {
+            case 1:
+              friendlyMessage = 'Location access was denied. Please allow permissions in browser settings.';
+              break;
+            case 2:
+              friendlyMessage = 'Location unavailable. Could not determine current position.';
+              break;
+            case 3:
+              friendlyMessage = 'Location request timed out. Please try again.';
+              break;
+          }
+          showToast(friendlyMessage, 'warning');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  }
+});
+</script>
+{% endblock %}
