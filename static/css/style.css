@@ -147,8 +147,7 @@
 
 :root[data-theme="dark"] .coord-picker-box {
   background: #0F1B2D;
-  border-color: #155E75;
-}
+border-color: #155E75;
 
 :root[data-theme="dark"] .leaflet-popup-content-wrapper {
   background: #111827;
